@@ -4,42 +4,21 @@ STACK 100h
 DATASEG
 ; --------------------------
 ; Your variables here
-tester dw ?
-leter_syntex db 061h
-
+decrypted_letter dw ?
+current_letter dw ?
 a_row db 27 dup(?)
-b_row db 27 dup(?)
-c_row db 27 dup(?)
-d_row db 27 dup(?)
-e_row db 27 dup(?)
-f_row db 27 dup(?)
-g_row db 27 dup(?)
-h_row db 27 dup(?)
-i_row db 27 dup(?)
-j_row db 27 dup(?)
-k_row db 27 dup(?)
-l_row db 27 dup(?)
-m_row db 27 dup(?)
-n_row db 27 dup(?)
-o_row db 27 dup(?)
-p_row db 27 dup(?)
-q_row db 27 dup(?)
-r_row db 27 dup(?)
-s_row db 27 dup(?)
-t_row db 27 dup(?)
-u_row db 27 dup(?)
-v_row db 27 dup(?)
-w_row db 27 dup(?)
-x_row db 27 dup(?)
-y_row db 27 dup(?)
-z_row db 27 dup(?)
 encrypted_letter dw ? 
-message db 23 dup(?)
+encryption_message db 23 dup(?)
+decryption_message db 23 dup(?)
 keyword db 23 dup(?)
 ;---------------------------
-z db 'what to encrypt?$'
-s db 'whats the key?$'
-e db 'thats what i produced:$'
+encr_1 db 'what to encrypt?$'
+AskForKey db 'whats the key?$'
+production db 'thats what i produced:$'
+decr_1 db 'what to decrypt?$'
+arrow db ' row --> $'
+space db ' $'
+
 
 ; --------------------------
 CODESEG
@@ -89,113 +68,6 @@ proc NewLine
 ; the procedure performs a new line action.
 endp NewLine
 
-proc fill_array
-; gets offset of array (length 26) to fill and number of letter tio start from
-	push bp
-	mov bp, sp
-	
-	push ax
-	push bx
-	push cx
-	push dx
-	
-	xor ax, ax
-	xor bx, bx
-	xor cx, cx
-	mov [leter_syntex], 061h
-	mov bx, [bp + 4] ; array offset
-	mov cx, [bp + 6] ; start number
-start_point:
-	add [leter_syntex], 1h
-	loop start_point
-	
-	mov cx, 26
-	
-fill_loop:
-	mov al, [leter_syntex]
-	cmp al, 07Ah
-	jg set_letter
-	mov [bx], al
-	inc bx
-	add [leter_syntex], 1h
-	loop fill_loop
-	mov dl, '$'
-	mov [bx], dl
-	jmp kill_switch
-
-set_letter:
-	mov [leter_syntex], 061h
-	jmp fill_loop
-	
-kill_switch:
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	pop bp
-	ret
-; fills the array according the start number
-endp fill_array	
-
-proc FillSquare
-;gets nothing
-	push ax
-	push bx
-	push cx
-	push dx
-	
-	xor ax, ax
-	xor bx, bx
-	mov ax, 27
-	mul bx
-	add ax, offset a_row
-	
-fill_matrix:
-	push bx
-	push ax
-	call fill_array
-	pop ax ; cleaning
-	pop ax ; cleaning
-	inc bx
-	mov ax, 27
-	mul bx
-	add ax, offset a_row
-	cmp bx, 26
-	jne fill_matrix
-	
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret
-;builds the viz'nare square
-endp FillSquare
-
-proc PrintSquare
-;gets nothing 
-	push ax
-	push bx
-	push cx
-	push dx
-	
-	mov cx, 26
-	mov ax, offset a_row
-	
-print_array:
-	push ax
-	call print
-	call NewLine	
-	pop bx
-	add ax, 27
-	loop print_array
-	
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret
-;prints the viz'nare square
-endp PrintSquare
 proc encrypt_letter
 	push bp 
 	mov bp, sp
@@ -211,28 +83,19 @@ proc encrypt_letter
 	
 	mov al, [bp + 4]; letter to encrypt
 	mov ah, [bp + 6]; letter to encrypt by
+	cmp al, ' '
+	je ending
 	mov bx, offset a_row
-	mov cx, 26
-
-search_loop:
-	cmp [bx], ah
-	je found_row
-	add bx, 27
-	loop search_loop
-
-found_row:
-	sub al, 061h
-	xor cx, cx
-	mov cl, al
-
-go_over:
-	inc bx
-	loop go_over
-	xor ax, ax
-	mov al, [bx]
-	mov [offset encrypted_letter], al
+	
+	sub ah, 'a'
+	add al, ah
+	cmp al, 'z'
+	jbe ending
+	sub al, 26
+	
+ending:
 	mov ah, '$'
-	mov [offset encrypted_letter + 1], ah
+	mov [encrypted_letter], ax
 	
 	pop dx
 	pop cx
@@ -269,7 +132,9 @@ proc input_string
 	ret 
 	
 endp input_string
-proc length_of_var
+
+proc encrypt_message
+;gets nothing
 	push bp 
 	mov bp, sp
 	push ax
@@ -281,40 +146,18 @@ proc length_of_var
 	xor bx, bx
 	xor cx, cx
 	xor dx, dx
-	
-	mov bx, [bp + 4]; offset var
-	
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	pop bp
-	ret 
-	
-endp length_of_var
-proc x
-	push bp 
-	mov bp, sp
-	push ax
-	push bx
-	push cx
-	push dx
-	
-	xor ax, ax
-	xor bx, bx
-	xor cx, cx
-	xor dx, dx
+
 	
 	mov bx, offset keyword
-	mov di, offset message
+	mov di, offset encryption_message
 	add bx, 2d
 	add di, 2d
-y:
+encryption_loop:
 	
 	cmp al, [offset keyword + 1]
 	je reset_bx
 	
-	cmp cl, [offset message + 1]
+	cmp cl, [offset encryption_message + 1] 
 	je end_proc
 	
 	push [bx] ; encryption row
@@ -329,12 +172,13 @@ y:
 	inc di
 	inc ax
 	inc cx
-	jmp y
+	jmp encryption_loop
 
 reset_bx:
 	xor ax, ax
 	mov bx, offset keyword
-	jmp y
+	add bx, 2d
+	jmp encryption_loop
 
 end_proc:
 
@@ -345,35 +189,328 @@ end_proc:
 	pop bp
 	ret 
 	
-endp x
+endp encrypt_message
+proc decrypt_letter
+	push bp 
+	mov bp, sp
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+
+	mov al, [bp + 4]; letter to decrypt
+	mov ah, [bp + 6]; letter to decrypt by
+	cmp al, ' ' ; in case its a space, ceaser cipher does not include spaces.
+	je end_it
+	mov bx, offset a_row
+	sub ah, 'a'
+
+
+	sub al, ah
+	cmp al, 'a'
+	jae end_it
+	add al, 26
+	
+end_it:
+	mov ah, '$'
+	mov [offset decrypted_letter ], ax
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	pop bp
+	ret 
+	
+endp decrypt_letter
+proc decrypt_message
+	push bp 
+	mov bp, sp
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+
+	mov bx, offset keyword
+	mov di, offset decryption_message
+	add bx, 2d
+	add di, 2d
+decryption_loop:
+	
+	cmp al, [offset keyword + 1]
+	je reset_counter
+	
+	cmp cl, [offset decryption_message + 1] 
+	je end_proc2
+	
+	push [bx] ; decryption row
+	push [di] ; decryption letter
+	call decrypt_letter
+	pop dx; cleaning
+	pop dx; cleaning
+	push offset decrypted_letter
+	call print
+	pop dx
+	inc bx
+	inc di
+	inc ax
+	inc cx
+	jmp decryption_loop
+
+reset_counter:
+	xor ax, ax
+	mov bx, offset keyword
+	add bx, 2d
+	jmp decryption_loop
+
+end_proc2:
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	pop bp
+	ret 
+	
+endp decrypt_message
+
+proc fill_base_array
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+
+	xor cx, cx
+	mov bx, offset a_row
+fill:; filling the base array.
+	mov ax, 'a'
+	add ax, cx
+	mov [bx], ax
+	inc bx
+	inc cx
+	cmp cx, 26
+	jne fill	
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp fill_base_array
+proc square_encryption_main
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	push offset encr_1
+	call print
+	pop ax
+	
+	push offset encryption_message
+	call NewLine
+	call input_string
+	pop ax
+	call NewLine
+	
+	push offset AskForKey
+	call print
+	pop ax
+	call NewLine
+	
+	push offset keyword
+	call input_string
+	pop ax
+	call NewLine
+	
+	push offset production
+	call print 	
+	pop ax
+	
+	push offset space
+	call print
+	pop ax
+	
+	call encrypt_message
+	call NewLine
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp square_encryption_main
+
+proc square_decryption_main
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	push offset decr_1
+	call print
+	pop ax
+	
+	push offset decryption_message
+	call NewLine
+	call input_string
+	pop ax
+	call NewLine
+	
+	push offset AskForKey
+	call print
+	pop ax
+	call NewLine
+	
+	push offset keyword
+	call input_string
+	pop ax
+	
+	call NewLine
+	push offset production
+	call print
+	pop ax 	
+	
+	push offset space
+	call print
+	pop ax
+	
+	call decrypt_message
+	call NewLine
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp square_decryption_main
+
+proc print_square
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	mov bx, offset a_row
+	mov cx, 26
+send_to_print:
+	push [bx]
+	call print_array
+	pop ax
+	call NewLine
+	inc bx
+	loop send_to_print
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp print_square
+
+proc print_array
+	push bp
+	mov bp, sp
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	mov bx, [bp + 4] ; start letter
+	mov [current_letter], bx
+	mov ah, '$'
+	mov [offset current_letter + 1], ah
+	push offset current_letter
+	call print
+	pop ax;cleaning
+	
+	push offset arrow
+	call print
+	pop ax;cleaning
+	
+	xor ax, ax
+	mov cx, 25
+	mov al, 'z'
+	
+p_array_loop:
+	mov [offset current_letter], bl
+	push offset current_letter
+	call print
+	pop dx;cleaning
+	
+	push offset space
+	call print
+	pop dx;cleaning
+	
+	cmp bl, al
+	jae move_bx_to_start
+	
+	inc bx
+	loop p_array_loop
+	jmp kill_proc
+
+	
+move_bx_to_start:
+	mov bx, 'a'
+	jmp p_array_loop
+
+kill_proc:
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	pop bp
+	ret 
+endp print_array
+
 start:
 	mov ax, @data
 	mov ds, ax
 ; --------------------------
 ; Your code here
-	call FillSquare
-	push offset z
-	call print
-	push offset message
-	call NewLine
-	call input_string
-	call NewLine
-	push offset s
-	call print
-	call NewLine
-	push offset keyword
-	call input_string
-	call NewLine
-	push offset e
-	call print
-	call NewLine
-	call x
-	
+	call fill_base_array
+	call square_encryption_main
+	call square_decryption_main
+	call print_square
 ; --------------------------
 
 exit:
 	mov ax, 4c00h
 	int 21h
 END start
+
 
 
