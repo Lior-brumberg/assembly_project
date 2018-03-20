@@ -6,7 +6,6 @@ DATASEG
 ; Your variables here
 decrypted_letter dw ?
 current_letter dw ?
-a_row db 27 dup(?)
 encrypted_letter dw ? 
 encryption_message db 23 dup(?)
 decryption_message db 23 dup(?)
@@ -85,7 +84,7 @@ proc encrypt_letter
 	mov ah, [bp + 6]; letter to encrypt by
 	cmp al, ' '
 	je ending
-	mov bx, offset a_row
+
 	
 	sub ah, 'a'
 	add al, ah
@@ -207,7 +206,6 @@ proc decrypt_letter
 	mov ah, [bp + 6]; letter to decrypt by
 	cmp al, ' ' ; in case its a space, ceaser cipher does not include spaces.
 	je end_it
-	mov bx, offset a_row
 	sub ah, 'a'
 
 
@@ -282,34 +280,6 @@ end_proc2:
 	
 endp decrypt_message
 
-proc fill_base_array
-	push ax
-	push bx
-	push cx
-	push dx
-	
-	xor ax, ax
-	xor bx, bx
-	xor cx, cx
-	xor dx, dx
-
-	xor cx, cx
-	mov bx, offset a_row
-fill:; filling the base array.
-	mov ax, 'a'
-	add ax, cx
-	mov [bx], ax
-	inc bx
-	inc cx
-	cmp cx, 26
-	jne fill	
-	
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	ret 
-endp fill_base_array
 proc square_encryption_main
 	push ax
 	push bx
@@ -419,10 +389,11 @@ proc print_square
 	xor cx, cx
 	xor dx, dx
 	
-	mov bx, offset a_row
+	mov bl, 'a'
 	mov cx, 26
+	
 send_to_print:
-	push [bx]
+	push bx
 	call print_array
 	pop ax
 	call NewLine
@@ -501,7 +472,6 @@ start:
 	mov ds, ax
 ; --------------------------
 ; Your code here
-	call fill_base_array
 	call square_encryption_main
 	call square_decryption_main
 	call print_square
