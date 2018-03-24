@@ -4,6 +4,7 @@ STACK 100h
 DATASEG
 ; --------------------------
 ; Your variables here
+shift_number dw ?
 decrypted_letter dw ?
 current_letter dw ?
 encrypted_letter dw ? 
@@ -466,21 +467,135 @@ kill_proc:
 	pop bp
 	ret 
 endp print_array
+proc InputNumber
+; the procedure gets the offset address of a variable
+	push bp
+	mov bp, sp
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	mov ah, 1h
+	int 21h 
+	sub al, '0'
+	mov bx, [bp + 4]
+	mov [bx], al
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	pop bp
+	ret
+; the procedure inputs a number from 0-9 into the variable.
+endp  InputNumber
+proc encrypt_by_shift
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	push offset shift_number
+	call InputNumber
+	pop ax
+	add [shift_number], 'a'
+	mov bx, offset encryption_message
+	inc bx
+	mov cl, [bx]
+	inc bx
+send_to_encryption:
+	push [shift_number]
+	mov ax, [bx]
+	mov ah, 00
+	push ax
+	call encrypt_letter
+	pop ax
+	pop ax
+	push offset encrypted_letter
+	call print
+	pop ax
+	inc bx
+	loop send_to_encryption
+	
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+endp encrypt_by_shift
+proc decrypt_by_shift
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	push offset shift_number
+	call InputNumber
+	pop ax
+	add [shift_number], 'a'
+	mov bx, offset decryption_message
+	inc bx
+	mov cl, [bx]
+	inc bx
+send_to_decryption:
+	push [shift_number]
+	mov ax, [bx]
+	mov ah, 00
+	push ax
+	call decrypt_letter
+	pop ax
+	pop ax
+	push offset decrypted_letter
+	call print
+	pop ax
+	inc bx
+	loop send_to_decryption
+	
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret
+endp decrypt_by_shift
 
 start:
 	mov ax, @data
 	mov ds, ax
 ; --------------------------
 ; Your code here
-	call square_encryption_main
-	call square_decryption_main
-	call print_square
+	push offset decryption_message
+	call NewLine
+	call input_string
+	pop ax
+	call NewLine
+	
+	call decrypt_by_shift
 ; --------------------------
 
 exit:
 	mov ax, 4c00h
 	int 21h
 END start
+
+
 
 
 
