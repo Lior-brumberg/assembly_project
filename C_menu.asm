@@ -4,6 +4,7 @@ STACK 100h
 DATASEG
 ; --------------------------
 ; Your variables here
+current_letter dw ?
 user_answer db ?
 sec db ?
 encr_1 db 'What to encrypt?$'
@@ -14,7 +15,7 @@ arrow db ' Row --> $'
 space db ' $'
 DoubleTab db '		$'
 initialize db 'Machin start protocol launched.$'
-greeting db 'HI! Im a ceaser cipher encryption/decryption machin. you must be the guy  who woke me up$'
+greeting db 'HI! Im a ceasar cipher encryption/decryption machin.$'
 dot db '.$'
 ability_declaration db 'So U got a few choices:$'
 choice1 db '1) Encrypte something$'
@@ -29,12 +30,47 @@ MyName db 'NAME: Lior Brumberg $'
 MyBirthDay db 'BIRTH DATE: 20/05/2001 $'
 MyCity db 'HOMETOWN: HADERA $'
 HighSchool db 'HIGHSCHOOL: tichon hadeara $'
+exitMSG db 'Goodbye! mechin terminating...$'
 ;----   general subsection   ----
 buffer db '============================= $'
-
+;----   what I do subsection   ----
+WIDline1 db 'I specialize at a type of encryption called "ceasar cipher"$'
+WIDline2 db 'Its a type of encryption created by Julius Caesar, the greek ruler$'
+WIDline3 db 'What I basiclly do is i shift the letter you input several positions ahead based on a keyword or a specific number $'
+WIDline4 db 'If you choose to encrypt by number(lets say 1), i just move your letter 1 space ahead so A becomes B, C becomes D and so on...$'
+WIDline5 db 'If you choose a keyword i use it and encrypt every letter in your message based on a letter from your keyword based on its order and a square called:     Vigenere square$'
+WIDline6 db 'would you like to see it?(1- yes, other- no)$' 
 
 ; --------------------------
 CODESEG
+proc print_square
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	mov bl, 'a'
+	mov cx, 26
+	
+send_to_print:
+	push bx
+	call print_array
+	pop ax
+	call NewLine
+	inc bx
+	loop send_to_print
+	
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp print_square
 proc InputNumber
 ; the procedure gets the offset address of a variable
 	push bp
@@ -247,6 +283,141 @@ proc Biography
 	ret 
 ; the procedure prints the biography msg's.
 endp Biography
+proc explain_WID
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	push offset WIDline1
+	call print 
+	pop ax
+	call NewLine
+	
+	call think
+	push offset WIDline2
+	call print 
+	pop ax
+	call NewLine
+	
+	call think
+	push offset WIDline3
+	call print 
+	pop ax
+	call NewLine
+	call WaitingSec
+	call WaitingSec
+	
+	call think
+	push offset WIDline4
+	call print 
+	pop ax
+	call NewLine
+	call WaitingSec
+	call WaitingSec
+	
+	call think
+	push offset WIDline5
+	call print 
+	pop ax
+	call NewLine
+	call WaitingSec
+	call WaitingSec
+	
+	call think
+	push offset WIDline6
+	call print 
+	pop ax
+	call NewLine
+	mov al, [user_answer]
+	mov ah, 0
+	push ax
+	
+	call think
+	push offset user_answer
+	call InputNumber
+	pop ax
+	
+	cmp [user_answer], 1
+	jne cont
+
+print_Vigenère:
+	call print_square
+
+cont:
+	pop ax
+	mov [user_answer], al
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	ret 
+endp explain_WID
+
+proc print_array
+	push bp
+	mov bp, sp
+	push ax
+	push bx
+	push cx
+	push dx
+	
+	xor ax, ax
+	xor bx, bx
+	xor cx, cx
+	xor dx, dx
+	
+	mov bx, [bp + 4] ; start letter
+	mov [current_letter], bx
+	mov ah, '$'
+	mov [offset current_letter + 1], ah
+	push offset current_letter
+	call print
+	pop ax;cleaning
+	
+	push offset arrow
+	call print
+	pop ax;cleaning
+	
+	xor ax, ax
+	mov cx, 25
+	mov al, 'z'
+	
+p_array_loop:
+	mov [offset current_letter], bl
+	push offset current_letter
+	call print
+	pop dx;cleaning
+	
+	push offset space
+	call print
+	pop dx;cleaning
+	
+	cmp bl, al
+	jae move_bx_to_start
+	
+	inc bx
+	loop p_array_loop
+	jmp kill_proc
+
+	
+move_bx_to_start:
+	mov bx, 'a'
+	jmp p_array_loop
+
+kill_proc:
+	pop dx
+	pop cx
+	pop bx
+	pop ax
+	pop bp
+	ret 
+endp print_array
 start:
 	mov ax, @data
 	mov ds, ax
@@ -263,22 +434,36 @@ ask:
 	call NewLine
 	call think
 	call print_choices
+	call think
 	push offset user_answer
 	call InputNumber
 	call NewLine
 	cmp [user_answer], 3
 	je my_bio
+	cmp [user_answer], 4
+	je EWID
+	cmp [user_answer], 5
+	je end_program
 	jmp ask
 my_bio:
+	call think
 	call biography
 	jmp ask
+EWID:
+	call think
+	call explain_WID
+	call NewLine
+	jmp ask
+end_program:
+	push offset exitMSG
+	call print
+	
 ; --------------------------
 	
 exit:
 	mov ax, 4c00h
 	int 21h
 END start
-
 
 
 
